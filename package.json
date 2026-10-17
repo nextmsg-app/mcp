@@ -1,0 +1,47 @@
+{
+  "name": "@nextmsg/mcp",
+  "version": "1.0.2",
+  "description": "Official Model Context Protocol (MCP) server & CLI for NextMsg - Push alerts directly to your phone from Claude, Cursor, and AI agents",
+  "homepage": "https://nextmsg.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nextmsg-app/mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nextmsg-app/mcp/issues"
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "bin": {
+    "nextmsg": "index.js",
+    "nextmsg-mcp": "index.js"
+  },
+  "scripts": {
+    "test": "node test.mcp.js",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "nextmsg",
+    "next-msg",
+    "next-message",
+    "nextmessage",
+    "notifications",
+    "push",
+    "alerts",
+    "claude",
+    "cursor",
+    "ai-agent"
+  ],
+  "author": "NextMsg",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
