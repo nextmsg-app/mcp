@@ -1,6 +1,14 @@
 # @nextmsg/mcp
 
+[![npm](https://img.shields.io/npm/v/@nextmsg/mcp)](https://www.npmjs.com/package/@nextmsg/mcp)
+[![test](https://github.com/nextmsg-app/mcp/actions/workflows/test.yml/badge.svg)](https://github.com/nextmsg-app/mcp/actions/workflows/test.yml)
+[![license](https://img.shields.io/npm/l/@nextmsg/mcp)](LICENSE)
+
 Official [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server and CLI notifier for [NextMsg](https://nextmsg.app).
+
+- **npm:** [npmjs.com/package/@nextmsg/mcp](https://www.npmjs.com/package/@nextmsg/mcp), run it with `npx -y @nextmsg/mcp`
+- **Source:** [github.com/nextmsg-app/mcp](https://github.com/nextmsg-app/mcp)
+- **Guides:** [nextmsg.app/guides](https://nextmsg.app/guides/) (Claude Code, Cursor, Codex, Antigravity, GitHub Actions, AWS and more)
 
 NextMsg is a one-way push notification inbox for developers. AI agents, autonomous scripts, and long-running workflows use it to notify your phone when tasks finish, fail, or need attention.
 
