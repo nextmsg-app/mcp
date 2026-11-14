@@ -190,7 +190,7 @@ async function sendMessage({ message, channel = 'general', sendKey, apiBase = DE
     }
     switch (response.status) {
       case 401:
-        throw new Error('The send key is invalid or was rotated. Update NEXTMSG_KEY.');
+        throw new Error('The send key is invalid, was rotated, or its inbox was deleted. Update NEXTMSG_KEY.');
       case 402:
         throw new Error('The free plan limit (100 messages a month) is reached. The recipient can upgrade in the app.');
       case 413:
