@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- A rejected send key (401) now says the inbox may have been deleted, not only that the key was rotated
+- CI uses actions/checkout and actions/setup-node v7
+
 ## 1.0.3
 
 - Package metadata: repository and issue links point to github.com/nextmsg-app/mcp
