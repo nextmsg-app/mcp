@@ -14,6 +14,18 @@ NextMsg is a one-way push notification inbox for developers. AI agents, autonomo
 
 ---
 
+## Get a send key
+
+1. Install the NextMsg app:
+   - iPhone: [App Store](https://apps.apple.com/app/nextmsg-push-notifications/id6831546010)
+   - Android: [Google Play](https://play.google.com/store/apps/details?id=app.nextmsg)
+2. Open it. Your inbox is created on the spot: no account, no email.
+3. Go to **Settings → Send key** and copy it. It looks like `nextmsg_live_…`.
+
+Keep the key out of code and repos: put it in the `NEXTMSG_KEY` environment variable as shown below. If it leaks, rotate it in the app (Settings). Help: [nextmsg.app/support](https://nextmsg.app/support).
+
+---
+
 ## Quickstart: Use with AI Tools
 
 ### 1. Claude Desktop
