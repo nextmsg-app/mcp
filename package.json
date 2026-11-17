@@ -1,6 +1,6 @@
 {
   "name": "@nextmsg/mcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Official Model Context Protocol (MCP) server & CLI for NextMsg - Push alerts directly to your phone from Claude, Cursor, and AI agents",
   "homepage": "https://nextmsg.app",
   "repository": {

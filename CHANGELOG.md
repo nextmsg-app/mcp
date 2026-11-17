@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- README: Get a send key section with App Store and Google Play links
+
 ## 1.0.4
 
 - A rejected send key (401) now says the inbox may have been deleted, not only that the key was rotated
