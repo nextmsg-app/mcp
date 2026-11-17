@@ -30,3 +30,34 @@ jobs:
           fi
       - run: npm test
       - run: npm publish --provenance --access public
+
+      # MCP Registry (registry.modelcontextprotocol.io): publishes server.json as
+      # io.github.nextmsg-app/mcp, authenticated by this workflow's GitHub OIDC token
+      - name: Set server.json version from package.json
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          jq --arg v "$v" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Download and verify mcp-publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.9
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+      - name: Publish to the MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          # The registry checks mcpName in the npm package, which can take a minute to appear
+          for i in 1 2 3 4 5 6; do ./mcp-publisher publish && exit 0; sleep 20; done
+          exit 1

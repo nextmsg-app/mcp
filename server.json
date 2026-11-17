@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nextmsg-app/mcp",
+  "title": "NextMsg",
+  "description": "Push notifications to your phone from AI agents: a notify_human tool via the NextMsg app.",
+  "websiteUrl": "https://nextmsg.app",
+  "repository": {
+    "url": "https://github.com/nextmsg-app/mcp",
+    "source": "github"
+  },
+  "version": "1.0.6",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@nextmsg/mcp",
+      "version": "1.0.6",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "NEXTMSG_KEY",
+          "description": "Your NextMsg send key (nextmsg_live_...), from the app: Settings > Send key",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

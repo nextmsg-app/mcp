@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+- Listed in the official MCP Registry as `io.github.nextmsg-app/mcp` (`mcpName` in package.json, `server.json`); releases publish there automatically
+
 ## 1.0.5
 
 - README: Get a send key section with App Store and Google Play links
