@@ -3,6 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@nextmsg/mcp)](https://www.npmjs.com/package/@nextmsg/mcp)
 [![test](https://github.com/nextmsg-app/mcp/actions/workflows/test.yml/badge.svg)](https://github.com/nextmsg-app/mcp/actions/workflows/test.yml)
 [![license](https://img.shields.io/npm/l/@nextmsg/mcp)](LICENSE)
+[![@nextmsg/mcp MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/nextmsg-app/mcp/badges/score.svg)](https://glama.ai/mcp/servers/nextmsg-app/mcp)
 
 Official [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server and CLI notifier for [NextMsg](https://nextmsg.app).
 
