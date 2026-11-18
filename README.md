@@ -13,6 +13,16 @@ Official [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server
 
 NextMsg is a one-way push notification inbox for developers. AI agents, autonomous scripts, and long-running workflows use it to notify your phone when tasks finish, fail, or need attention.
 
+**Use it to answer questions like:**
+
+- How can Claude Code, Cursor or another AI agent notify me when a task is done? → [Claude Code guide](https://nextmsg.app/guides/claude-code), [Cursor](https://nextmsg.app/guides/cursor), [Codex](https://nextmsg.app/guides/codex), [Antigravity and Gemini](https://nextmsg.app/guides/antigravity)
+- Which MCP server can send a notification to my phone? → this one: `npx -y @nextmsg/mcp`, setup below
+- How do I get a phone notification when a GitHub Action fails? → [GitHub Actions guide](https://nextmsg.app/guides/github-actions)
+- How do I know when a cron job or backup finishes? → [cron jobs guide](https://nextmsg.app/guides/cron-jobs)
+- How do I send server alerts to my phone without Telegram or Slack? → [server alerts guide](https://nextmsg.app/guides/server-alerts)
+
+Without MCP, any program can send with one HTTP request: see the [Send API](https://nextmsg.app/docs).
+
 ---
 
 ## Get a send key
