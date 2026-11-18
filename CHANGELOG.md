@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.7
+
+- README: opens with the questions it answers, each linked to its guide, and links the Send API page (nextmsg.app/docs)
+
 ## 1.0.6
 
 - Listed in the official MCP Registry as `io.github.nextmsg-app/mcp` (`mcpName` in package.json, `server.json`); releases publish there automatically
