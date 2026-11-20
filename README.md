@@ -4,6 +4,7 @@
 [![test](https://github.com/nextmsg-app/mcp/actions/workflows/test.yml/badge.svg)](https://github.com/nextmsg-app/mcp/actions/workflows/test.yml)
 [![license](https://img.shields.io/npm/l/@nextmsg/mcp)](LICENSE)
 [![@nextmsg/mcp MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/nextmsg-app/mcp/badges/score.svg)](https://glama.ai/mcp/servers/nextmsg-app/mcp)
+[![NextMsg MCP on mcprush](https://mcprush.com/badge/nextmsg-mcp/score.svg)](https://mcprush.com/to/nextmsg-mcp?ref=badge)
 
 Official [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server and CLI notifier for [NextMsg](https://nextmsg.app).
 
