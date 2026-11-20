@@ -5,6 +5,7 @@
 - Dockerfile (Node 24 Alpine, no dependencies, runs as the `node` user) for the Docker MCP Catalog; CI builds the image and checks it lists `notify_human`
 - `mcp.json` (Open Plugins) so directories can detect the server
 - README: mcprush badge
+- `SECURITY.md`: how to report a vulnerability
 
 ## 1.0.7
 
