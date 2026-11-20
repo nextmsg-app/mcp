@@ -1,5 +1,5 @@
 # NextMsg MCP server (stdio). No dependencies: the image holds only index.js.
-FROM node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+FROM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
 
 LABEL org.opencontainers.image.title="NextMsg MCP server" \
       org.opencontainers.image.description="Push notifications to your phone from AI agents: a notify_human tool via the NextMsg app." \
