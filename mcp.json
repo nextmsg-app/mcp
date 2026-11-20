@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nextmsg": {
+      "command": "npx",
+      "args": ["-y", "@nextmsg/mcp"],
+      "env": {
+        "NEXTMSG_KEY": "nextmsg_live_YOUR_KEY_HERE"
+      }
+    }
+  }
+}
