@@ -20,3 +20,18 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t nextmsg-mcp .
+      - name: Lists notify_human over stdio without a key
+        run: |
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 20 docker run -i --rm nextmsg-mcp > out.jsonl || true
+          cat out.jsonl
+          grep -q '"name":"notify_human"' out.jsonl
