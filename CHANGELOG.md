@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1
 
 - Requests refuse redirects, so a key is never sent anywhere but the API
 - Parallel `notify_human` calls with the same `pair_code` share one claim instead of the second failing
