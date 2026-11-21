@@ -1,10 +1,10 @@
 // Tests for the NextMsg MCP server and CLI against a local mock of the NextMsg API.
 // Run: npm test
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import http from 'node:http';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, mkdirSync, chmodSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -326,6 +326,66 @@ await test('a key file that cannot be written: still sends, says it lasts until 
   assert.equal(sent.length, 2);
 });
 
+await test('a revoked saved key and a wrong new code: says connecting again failed, nothing sent', async () => {
+  const config = freshConfig();
+  liveCodes.add('FFFF-6666');
+  const m = startMcp({ NEXTMSG_KEY: '', XDG_CONFIG_HOME: config });
+  await m.notify({ message: 'first', pair_code: 'FFFF-6666' });
+  validKeys.delete(readFileSync(keyFile(config), 'utf8').trim());
+  sent.length = 0;
+  const r = await m.notify({ message: 'x', pair_code: 'WRONG-CODE' });
+  m.stop();
+  assert.equal(r.isError, true);
+  assert.match(r.content[0].text, /revoked in NextMsg, and connecting again failed: The code is wrong/);
+  assert.equal(sent.length, 0);
+});
+
+// chflags uchg locks the folder even for its owner (chmod alone is undone by the MCP); macOS only
+if (process.platform === 'darwin') {
+  await test('a new key that cannot be saved wins over the revoked one still on disk', async () => {
+    const config = freshConfig();
+    const dir = path.dirname(keyFile(config));
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(keyFile(config), 'nextmsg_agent_revokedrevoked\n');
+    execFileSync('chflags', ['uchg', dir]); // the folder can't take the new file
+    liveCodes.add('GGGG-7777');
+    sent.length = 0;
+    const m = startMcp({ NEXTMSG_KEY: '', XDG_CONFIG_HOME: config });
+    const first = await m.notify({ message: 'x', pair_code: 'GGGG-7777' });
+    const next = await m.notify({ message: 'y' });
+    m.stop();
+    execFileSync('chflags', ['nouchg', dir]);
+    assert.equal(first.isError, false, first.content[0].text);
+    assert.match(first.content[0].text, /couldn't be saved/);
+    assert.equal(next.isError, false, next.content[0].text);
+    assert.equal(sent.length, 2);
+    assert.equal(sent[1].key, sent[0].key);
+    assert.deepEqual(readFileSync(keyFile(config), 'utf8'), 'nextmsg_agent_revokedrevoked\n');
+    assert.equal(readdirTmp(dir), 0, 'no temporary key file left behind');
+  });
+}
+
+function readdirTmp(dir) {
+  return readdirSync(dir).filter((f) => f.endsWith('.tmp')).length;
+}
+
+await test('NEXTMSG_KEY with a trailing newline is trimmed; a blank one falls back to the saved key', async () => {
+  sent.length = 0;
+  const m = startMcp({ NEXTMSG_KEY: 'nextmsg_live_mockkey\n' });
+  const r = await m.notify({ message: 'x' });
+  m.stop();
+  assert.equal(r.isError, false, r.content[0].text);
+  assert.equal(sent[0].key, 'nextmsg_live_mockkey');
+
+  const config = freshConfig();
+  liveCodes.add('HHHH-8888');
+  await runCli(['--pair', 'HHHH-8888'], { extraEnv: { NEXTMSG_KEY: '', XDG_CONFIG_HOME: config } });
+  sent.length = 0;
+  const blank = await runCli(['x'], { extraEnv: { NEXTMSG_KEY: '   ', XDG_CONFIG_HOME: config } });
+  assert.equal(blank.code, 0, blank.stderr);
+  assert.equal(sent[0].key, readFileSync(keyFile(config), 'utf8').trim());
+});
+
 // ---------------- CLI ----------------
 await test('CLI sends without a terminal, like a Claude Code hook (JSON on stdin)', async () => {
   sent.length = 0;
@@ -402,6 +462,20 @@ await test('CLI: a wrong --pair code fails with the server text', async () => {
   const r = await runCli(['--pair', 'NOPE-NOPE'], { extraEnv: { NEXTMSG_KEY: '' } });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /wrong, already used or expired/);
+});
+
+await test('CLI: options count only before "--" (-- "-v" sends "-v")', async () => {
+  sent.length = 0;
+  const r = await runCli(['--', '-v']);
+  assert.equal(r.code, 0, r.stderr);
+  assert.equal(sent[0].body.message, '-v');
+});
+
+await test('CLI: --pair with a message, or two modes, fails without claiming', async () => {
+  claims.length = 0;
+  assert.equal((await runCli(['--pair', 'IIII-9999', 'hello'])).code, 1);
+  assert.equal((await runCli(['--status', '--disconnect'])).code, 1);
+  assert.equal(claims.length, 0);
 });
 
 mock.close();

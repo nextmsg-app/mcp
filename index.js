@@ -20,6 +20,7 @@
 import readline from 'node:readline';
 import { readFileSync, writeFileSync, mkdirSync, renameSync, unlinkSync, chmodSync } from 'node:fs';
 import os from 'node:os';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 
 const VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
@@ -121,6 +122,11 @@ function parseCliArgs(cliArgs) {
 
 async function runCli(cliArgs) {
   const options = parseCliArgs(cliArgs);
+  const modes = [options.pair !== null, options.status, options.disconnect].filter(Boolean).length;
+  if (modes > 1) throw new Error('Use only one of --pair, --status and --disconnect.');
+  if (modes === 1 && options.message.trim()) {
+    throw new Error('--pair, --status and --disconnect don\'t send a message; run the message separately.');
+  }
   if (options.pair !== null) return cliPair(options.pair);
   if (options.status) return cliStatus();
   if (options.disconnect) return cliDisconnect();
@@ -130,7 +136,8 @@ async function runCli(cliArgs) {
     printHelp();
     process.exit(1);
   }
-  const resolved = options.key ? { key: options.key, source: 'option' } : resolveKey();
+  const optionKey = options.key.trim();
+  const resolved = optionKey ? { key: optionKey, source: 'option' } : resolveKey();
   if (!resolved) {
     console.error(`Error: Not connected to NextMsg. In the app open ${CONNECT_STEPS}, then run:`);
     console.error('  npx @nextmsg/mcp --pair <code>');
@@ -166,7 +173,7 @@ async function cliPair(code) {
   if (hadKey) {
     console.log('  It replaces the key saved before. If that agent is no longer used, revoke it in NextMsg → Settings → Agents.');
   }
-  if (process.env.NEXTMSG_KEY) {
+  if (envKey()) {
     console.log('  Note: NEXTMSG_KEY is set in this environment and is used instead of the saved key.');
   }
 }
@@ -174,8 +181,8 @@ async function cliPair(code) {
 function cliStatus() {
   const file = keyFilePath();
   const saved = readSavedKey();
-  if (process.env.NEXTMSG_KEY) {
-    console.log(`Using NEXTMSG_KEY from the environment (${maskKey(process.env.NEXTMSG_KEY)}).`);
+  if (envKey()) {
+    console.log(`Using NEXTMSG_KEY from the environment (${maskKey(envKey())}).`);
     if (saved) console.log(`A saved key in ${file} (${maskKey(saved)}) is not used while NEXTMSG_KEY is set.`);
   } else if (saved) {
     console.log(`Using the saved key in ${file} (${maskKey(saved)}).`);
@@ -229,9 +236,19 @@ function saveKey(key) {
   } catch {
     // Windows, or a folder we don't own: the file mode below still applies where supported
   }
-  const temp = `${file}.${process.pid}.tmp`;
-  writeFileSync(temp, `${key}\n`, { mode: 0o600 });
-  renameSync(temp, file);
+  // A new file every time ('wx'), so the 600 mode always applies and nothing else is followed
+  const temp = `${file}.${randomBytes(6).toString('hex')}.tmp`;
+  try {
+    writeFileSync(temp, `${key}\n`, { mode: 0o600, flag: 'wx' });
+    renameSync(temp, file);
+  } catch (err) {
+    try {
+      unlinkSync(temp);
+    } catch {
+      // Never created
+    }
+    throw err;
+  }
   try {
     chmodSync(file, 0o600);
   } catch {
@@ -243,10 +260,18 @@ function saveKey(key) {
 // A key paired in this MCP session whose file couldn't be written (read-only disk, container)
 let sessionKey = null;
 
-/** NEXTMSG_KEY always wins (CI, Docker, explicit setups); then the saved key. */
+/** NEXTMSG_KEY without the whitespace or newline secret stores and files often add */
+function envKey() {
+  return (process.env.NEXTMSG_KEY || '').trim();
+}
+
+/**
+ * NEXTMSG_KEY always wins (CI, Docker, explicit setups); then the saved key. A session key
+ * exists only when it couldn't be written, so it is newer than whatever the file holds.
+ */
 function resolveKey() {
-  if (process.env.NEXTMSG_KEY) return { key: process.env.NEXTMSG_KEY, source: 'env' };
-  const saved = readSavedKey() ?? sessionKey;
+  if (envKey()) return { key: envKey(), source: 'env' };
+  const saved = sessionKey ?? readSavedKey();
   return saved ? { key: saved, source: 'file' } : null;
 }
 
@@ -392,8 +417,9 @@ async function claimCode({ code, name, apiBase = DEFAULT_API_BASE }) {
     throw new Error(await errorDetail(response));
   }
   const body = await response.json();
-  if (!body || typeof body.send_key !== 'string') throw new Error('NextMsg sent an unexpected answer.');
-  return { send_key: body.send_key, name: body.name || name };
+  const key = typeof body?.send_key === 'string' ? body.send_key.trim() : '';
+  if (!/^nextmsg_[a-z]+_[0-9A-Za-z]+$/.test(key)) throw new Error('NextMsg sent an unexpected answer.');
+  return { send_key: key, name: body.name || name };
 }
 
 // ==========================================
@@ -490,23 +516,32 @@ async function notifyHuman(toolArgs, clientName) {
   }
 
   const send = () => sendMessage({ message: toolArgs.message, channel: toolArgs.channel, sendKey: resolved.key });
+  const failed = (err) => {
+    const text = err.status === 401 ? rejectedKeyText(resolved.source, 'mcp') : err.message;
+    if (!connectedAs) return { text: `Failed to send the notification: ${text}`, isError: true };
+    const kept = saveError ? ` The key couldn't be saved (${saveError}), so it works only until this MCP server stops.` : '';
+    return { text: `Connected to NextMsg as "${connectedAs}", but sending failed: ${text}${kept}`, isError: true };
+  };
+
   let res;
   try {
     res = await send();
   } catch (err) {
     // A revoked saved key with a new code: connect again and retry once. A code is otherwise
     // ignored while a key works (models repeat optional arguments; a burned code must not fail a send).
-    if (err.status === 401 && resolved.source === 'file' && pairCode && !connectedAs) {
-      try {
-        await pair();
-        res = await send();
-      } catch (retryErr) {
-        return { text: `Failed to send the notification: ${retryErr.message}`, isError: true };
-      }
-    } else {
-      const text = err.status === 401 ? rejectedKeyText(resolved.source, 'mcp') : err.message;
-      const prefix = connectedAs ? `Connected to NextMsg as "${connectedAs}", but sending failed: ` : 'Failed to send the notification: ';
-      return { text: prefix + text, isError: true };
+    if (!(err.status === 401 && resolved.source === 'file' && pairCode && !connectedAs)) return failed(err);
+    try {
+      await pair();
+    } catch (pairErr) {
+      return {
+        text: `This agent's key was revoked in NextMsg, and connecting again failed: ${pairErr.message} Ask the user for a new code from ${CONNECT_STEPS}. Nothing was sent.`,
+        isError: true
+      };
+    }
+    try {
+      res = await send();
+    } catch (retryErr) {
+      return failed(retryErr);
     }
   }
 
@@ -600,13 +635,16 @@ function runMcpServer() {
 // ==========================================
 
 const args = process.argv.slice(2);
+// Options count only before "--": `nextmsg -- "-v"` sends "-v"
+const dashDash = args.indexOf('--');
+const options = dashDash === -1 ? args : args.slice(0, dashDash);
 
-if (args.includes('-h') || args.includes('--help')) {
+if (options.includes('-h') || options.includes('--help')) {
   printHelp();
   process.exit(0);
 }
 
-if (args.includes('-v') || args.includes('--version')) {
+if (options.includes('-v') || options.includes('--version')) {
   console.log(`@nextmsg/mcp v${VERSION}`);
   process.exit(0);
 }
@@ -614,7 +652,7 @@ if (args.includes('-v') || args.includes('--version')) {
 // A message argument means CLI mode, whatever stdin is: scripts, CI jobs and Claude Code hooks
 // run without a terminal (and hooks pipe JSON on stdin), and must still send.
 // No arguments, or --mcp, means MCP server mode.
-if (args.length > 0 && !args.includes('--mcp')) {
+if (args.length > 0 && !options.includes('--mcp')) {
   runCli(args).catch((err) => {
     console.error(`Error: ${err.message}`);
     process.exit(1);
