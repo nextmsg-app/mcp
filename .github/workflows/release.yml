@@ -38,10 +38,10 @@ jobs:
           v="$(node -p "require('./package.json').version")"
           jq --arg v "$v" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
       - name: Install cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
       - name: Download and verify mcp-publisher
         env:
-          MCP_PUBLISHER_VERSION: v1.8.9
+          MCP_PUBLISHER_VERSION: v1.8.11
         run: |
           set -euo pipefail
           archive="mcp-publisher_linux_amd64.tar.gz"
