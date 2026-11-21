@@ -26,26 +26,28 @@ Without MCP, any program can send with one HTTP request: see the [Send API](http
 
 ---
 
-## Get a send key
+## Connect your phone
 
 1. Install the NextMsg app:
    - iPhone: [App Store](https://apps.apple.com/app/nextmsg-push-notifications/id6831546010)
    - Android: [Google Play](https://play.google.com/store/apps/details?id=app.nextmsg)
 2. Open it. Your inbox is created on the spot: no account, no email.
-3. Go to **Settings → Send key** and copy it. It looks like `nextmsg_live_…`.
+3. Connect your agent with a code, or use your send key (below).
 
-Keep the key out of code and repos: put it in the `NEXTMSG_KEY` environment variable as shown below. If it leaks, rotate it in the app (Settings). Help: [nextmsg.app/support](https://nextmsg.app/support).
+### With a code (no key to copy)
 
-### Or connect with a code (no key to copy)
-
-With the latest NextMsg app, each computer or agent can get its own key, which you can rename or revoke on its own:
+Each computer or agent gets its own key, which you can rename or revoke on its own in the app:
 
 1. In the app: **Settings → Agents → Connect agent**. It shows a code like `K73M-QX9P` for 5 minutes.
-2. On the computer, either run `npx -y @nextmsg/mcp --pair K73M-QX9P`, or give the code to your agent in the chat: with the MCP server set up without `NEXTMSG_KEY`, the agent asks for it the first time.
+2. Give the code to your agent in the chat: with the MCP server set up (no `NEXTMSG_KEY` needed), the agent asks for it the first time. Or run `npx -y @nextmsg/mcp --pair K73M-QX9P` in a terminal.
 
-The key is saved in `~/.config/nextmsg/key` (`$XDG_CONFIG_HOME/nextmsg/key` if set, `%APPDATA%\nextmsg\key` on Windows), readable only by you. `NEXTMSG_KEY`, when set, is always used instead. Never share the code: whoever uses it can send you notifications.
+The key is saved in `~/.config/nextmsg/key` (`$XDG_CONFIG_HOME/nextmsg/key` if set, `%APPDATA%\nextmsg\key` on Windows), readable only by you. Never share the code: whoever uses it within 5 minutes can send you notifications.
 
 In Docker, the saved key lives in the container and is gone when it's removed: mount a volume at `/home/node/.config/nextmsg`, or pass `NEXTMSG_KEY`.
+
+### With your send key
+
+In the app, go to **Settings → Send key** and copy it (`nextmsg_live_…`). Put it in the `NEXTMSG_KEY` environment variable, never in code or repos. When set, `NEXTMSG_KEY` is always used instead of a saved key. If it leaks, rotate it in the app (Settings). Help: [nextmsg.app/support](https://nextmsg.app/support).
 
 ---
 
@@ -61,24 +63,23 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "nextmsg": {
       "command": "npx",
-      "args": ["-y", "@nextmsg/mcp"],
-      "env": {
-        "NEXTMSG_KEY": "nextmsg_live_YOUR_KEY_HERE"
-      }
+      "args": ["-y", "@nextmsg/mcp"]
     }
   }
 }
 ```
+
+The first time, the agent asks you for a code from **Settings → Agents → Connect agent**. To use your send key instead, add `"env": { "NEXTMSG_KEY": "nextmsg_live_YOUR_KEY_HERE" }` next to `args`.
 
 ### 2. Cursor
 Go to **Settings** → **Features** → **MCP Servers** → **Add New MCP Server**:
 - **Name**: `nextmsg`
 - **Type**: `command`
 - **Command**: `npx -y @nextmsg/mcp`
-- Set environment variable `NEXTMSG_KEY` to your send key.
+- No key needed: the agent asks for a code from **Settings → Agents → Connect agent** the first time. Or set the environment variable `NEXTMSG_KEY` to your send key.
 
 ### 3. Claude Code Hook
-You can also set up a hook in `~/.claude/settings.json` so Claude Code pings your phone whenever it finishes a turn. Set `NEXTMSG_KEY` in your shell profile (or in the `env` block of `settings.json`):
+You can also set up a hook in `~/.claude/settings.json` so Claude Code pings your phone whenever it finishes a turn. Connect once with `npx -y @nextmsg/mcp --pair YOUR-CODE` (the hook then uses the saved key), or set `NEXTMSG_KEY` in your shell profile (or in the `env` block of `settings.json`):
 
 ```json
 {
