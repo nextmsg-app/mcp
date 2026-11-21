@@ -40,7 +40,7 @@ NextMsg MCP Server & CLI (v${VERSION})
 https://nextmsg.app
 
 CONNECT THIS COMPUTER (no key to copy):
-  In the app: ${CONNECT_STEPS}, then run
+  Open ${CONNECT_STEPS} on your phone, then run
   npx @nextmsg/mcp --pair K73M-QX9P
 
 USAGE (CLI):
