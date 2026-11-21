@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 - **Connect with a code:** `npx @nextmsg/mcp --pair K73M-QX9P` with a code from the app (Settings → Agents → Connect agent), or `notify_human` with the new optional `pair_code` argument. Each computer gets its own key, saved in `~/.config/nextmsg/key` (XDG, `%APPDATA%` on Windows; folder 700, file 600). `NEXTMSG_KEY` still wins when set
 - `--status` shows which key is used, `--disconnect` deletes the saved key
