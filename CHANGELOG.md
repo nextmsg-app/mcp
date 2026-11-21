@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `NEXTMSG_KEY` is optional in the MCP Registry listing and `mcp.json`: without it, the agent asks for a code from Settings → Agents → Connect agent
+- README starts with connecting by code; the send key is the alternative
+
 ## 1.1.1
 
 - Requests refuse redirects, so a key is never sent anywhere but the API

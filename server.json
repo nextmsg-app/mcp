@@ -20,8 +20,8 @@
       "environmentVariables": [
         {
           "name": "NEXTMSG_KEY",
-          "description": "Your NextMsg send key (nextmsg_live_...), from the app: Settings > Send key",
-          "isRequired": true,
+          "description": "Optional. Your NextMsg send key (nextmsg_live_...) from the app, Settings > Send key. Without it, the agent asks for a code from Settings > Agents > Connect agent the first time.",
+          "isRequired": false,
           "isSecret": true,
           "format": "string"
         }
