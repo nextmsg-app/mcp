@@ -132,7 +132,7 @@ Sends a push notification to your phone. The agent uses it when a task finishes,
 - `channel` *(string, optional, default: "general")*: Channel category tag (1–32 lowercase chars `a-z0-9_-`). E.g. `ci`, `deploy`, `ml`, `infra`.
 - `pair_code` *(string, optional)*: Only when not connected yet: the code from **Settings → Agents → Connect agent**. The server claims it, saves this computer's key and sends the message in the same call. Ignored once a key works.
 
-The key is read only from `NEXTMSG_KEY` or the saved key file, never from tool arguments, so it never passes through the model's context or transcripts. The tool result never contains it. The agent is named after the MCP client and the OS (like "Claude Code on macOS"), never the computer's hostname.
+The key is read only from `NEXTMSG_KEY` or the saved key file, never from tool arguments, so it never passes through the model's context or transcripts. It is sent only to the NextMsg API, in the `Authorization` header, and redirects are refused, so it can't be forwarded anywhere else. See [SECURITY.md](SECURITY.md) for how keys are handled and how to report a problem. The tool result never contains it. The agent is named after the MCP client and the OS (like "Claude Code on macOS"), never the computer's hostname.
 
 ---
 
