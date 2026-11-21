@@ -45,6 +45,8 @@ With the latest NextMsg app, each computer or agent can get its own key, which y
 
 The key is saved in `~/.config/nextmsg/key` (`$XDG_CONFIG_HOME/nextmsg/key` if set, `%APPDATA%\nextmsg\key` on Windows), readable only by you. `NEXTMSG_KEY`, when set, is always used instead. Never share the code: whoever uses it can send you notifications.
 
+In Docker, the saved key lives in the container and is gone when it's removed: mount a volume at `/home/node/.config/nextmsg`, or pass `NEXTMSG_KEY`.
+
 ---
 
 ## Quickstart: Use with AI Tools

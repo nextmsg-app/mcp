@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Requests refuse redirects, so a key is never sent anywhere but the API
+- Parallel `notify_human` calls with the same `pair_code` share one claim instead of the second failing
+- In a container, the connect message says the saved key is lost with the container unless the folder is a volume
+- Client name for Gemini CLI
+- Release workflow: actions pinned to commit SHAs, npm pinned to 11.21.3
+- `SECURITY.md` describes the saved key file and agent keys
+
 ## 1.1.0
 
 - **Connect with a code:** `npx @nextmsg/mcp --pair K73M-QX9P` with a code from the app (Settings → Agents → Connect agent), or `notify_human` with the new optional `pair_code` argument. Each computer gets its own key, saved in `~/.config/nextmsg/key` (XDG, `%APPDATA%` on Windows; folder 700, file 600). `NEXTMSG_KEY` still wins when set
