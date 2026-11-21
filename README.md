@@ -36,6 +36,15 @@ Without MCP, any program can send with one HTTP request: see the [Send API](http
 
 Keep the key out of code and repos: put it in the `NEXTMSG_KEY` environment variable as shown below. If it leaks, rotate it in the app (Settings). Help: [nextmsg.app/support](https://nextmsg.app/support).
 
+### Or connect with a code (no key to copy)
+
+With the latest NextMsg app, each computer or agent can get its own key, which you can rename or revoke on its own:
+
+1. In the app: **Settings → Agents → Connect agent**. It shows a code like `K73M-QX9P` for 5 minutes.
+2. On the computer, either run `npx -y @nextmsg/mcp --pair K73M-QX9P`, or give the code to your agent in the chat: with the MCP server set up without `NEXTMSG_KEY`, the agent asks for it the first time.
+
+The key is saved in `~/.config/nextmsg/key` (`$XDG_CONFIG_HOME/nextmsg/key` if set, `%APPDATA%\nextmsg\key` on Windows), readable only by you. `NEXTMSG_KEY`, when set, is always used instead. Never share the code: whoever uses it can send you notifications.
+
 ---
 
 ## Quickstart: Use with AI Tools
@@ -90,7 +99,9 @@ You can also set up a hook in `~/.claude/settings.json` so Claude Code pings you
 Send messages directly from your terminal or CI pipelines:
 
 ```bash
-# Set your key once
+# Connect once with a code from the app (Settings → Agents → Connect agent)
+npx @nextmsg/mcp --pair K73M-QX9P
+# ...or set the send key (CI, Docker)
 export NEXTMSG_KEY="nextmsg_live_..."
 
 # Send alert
@@ -100,7 +111,7 @@ npx @nextmsg/mcp "Model training complete: loss 0.12" --channel ml
 npx @nextmsg/mcp -- "-1 tests failing"
 ```
 
-`--key` works too, but prefer `NEXTMSG_KEY`: a key on the command line ends up in shell history. If a key leaks, rotate it in the app (Settings).
+`--status` shows which key is used; `--disconnect` deletes the saved key (revoke it in the app too, under Settings → Agents). `--key` works too, but prefer `--pair` or `NEXTMSG_KEY`: a key on the command line ends up in shell history. If a key leaks, rotate it in the app (Settings).
 
 ---
 
@@ -117,8 +128,9 @@ Sends a push notification to your phone. The agent uses it when a task finishes,
 **Parameters:**
 - `message` *(string, required)*: Alert text (1–640 characters). Supports markdown (`**bold**`, `*italic*`, `~~strike~~`, `` `code` ``). Links are inert text.
 - `channel` *(string, optional, default: "general")*: Channel category tag (1–32 lowercase chars `a-z0-9_-`). E.g. `ci`, `deploy`, `ml`, `infra`.
+- `pair_code` *(string, optional)*: Only when not connected yet: the code from **Settings → Agents → Connect agent**. The server claims it, saves this computer's key and sends the message in the same call. Ignored once a key works.
 
-The send key is read only from the `NEXTMSG_KEY` environment variable, never from tool arguments, so it never passes through the model's context or transcripts.
+The key is read only from `NEXTMSG_KEY` or the saved key file, never from tool arguments, so it never passes through the model's context or transcripts. The tool result never contains it. The agent is named after the MCP client and the OS (like "Claude Code on macOS"), never the computer's hostname.
 
 ---
 
