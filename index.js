@@ -505,21 +505,27 @@ async function notifyHuman(toolArgs, clientName) {
 
   const pair = async () => {
     if (!pendingPair) {
-      pendingPair = claimCode({ code: pairCode, name: agentName(clientName) }).finally(() => {
-        pendingPair = null;
-      });
+      // Claim and save once, however many calls are waiting for this pairing
+      pendingPair = claimCode({ code: pairCode, name: agentName(clientName) })
+        .then((claim) => {
+          try {
+            saveKey(claim.send_key);
+            sessionKey = null;
+            return { claim, saveError: null };
+          } catch (err) {
+            // Still usable until this server stops
+            sessionKey = claim.send_key;
+            return { claim, saveError: err.message };
+          }
+        })
+        .finally(() => {
+          pendingPair = null;
+        });
     }
-    const claim = await pendingPair;
-    connectedAs = claim.name;
-    resolved = { key: claim.send_key, source: 'file' };
-    try {
-      saveKey(claim.send_key);
-      sessionKey = null;
-    } catch (err) {
-      // Still usable until this server stops
-      sessionKey = claim.send_key;
-      saveError = err.message;
-    }
+    const result = await pendingPair;
+    connectedAs = result.claim.name;
+    resolved = { key: result.claim.send_key, source: 'file' };
+    saveError = result.saveError;
   };
 
   if (!resolved) {
