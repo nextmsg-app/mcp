@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Connect with a code:** `npx @nextmsg/mcp --pair K73M-QX9P` with a code from the app (Settings → Agents → Connect agent), or `notify_human` with the new optional `pair_code` argument. Each computer gets its own key, saved in `~/.config/nextmsg/key` (XDG, `%APPDATA%` on Windows; folder 700, file 600). `NEXTMSG_KEY` still wins when set
+- `--status` shows which key is used, `--disconnect` deletes the saved key
+- Without a key, `notify_human` tells the agent to ask for a code instead of failing
+- Sends with `POST /v1/send` and the key in the `Authorization` header instead of `/p/{key}` (required for agent keys, keeps keys out of URLs)
+- A rejected key says what to do for its source: pair again for a saved key, update `NEXTMSG_KEY` for the environment
+
 - Dockerfile (Node 24 Alpine, no dependencies, runs as the `node` user) for the Docker MCP Catalog; CI builds the image and checks it lists `notify_human`
 - `mcp.json` (Open Plugins) so directories can detect the server
 - README: mcprush badge
