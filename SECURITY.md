@@ -12,6 +12,10 @@ This covers the `@nextmsg/mcp` package and its Docker image. Issues with the Nex
 
 Only the latest release on npm gets security fixes.
 
-## Handling of your send key
+## Handling of your key
 
-As an MCP server it reads the send key only from the `NEXTMSG_KEY` environment variable, never from tool arguments. The key is sent only to the NextMsg API over HTTPS (`api.nextmsg.app`, unless you set `NEXTMSG_API_BASE`). If your key leaks, rotate it in the app (Settings).
+The key comes from the `NEXTMSG_KEY` environment variable or, after connecting with a code (`--pair`, or `pair_code` on `notify_human`), from `~/.config/nextmsg/key` (`$XDG_CONFIG_HOME/nextmsg/key` if set, `%APPDATA%\nextmsg\key` on Windows), a file only you can read (600, in a 700 folder). It is never taken from tool arguments and never appears in tool results. A pickup code works once and for 5 minutes.
+
+The key is sent only to the NextMsg API over HTTPS (`api.nextmsg.app`, unless you set `NEXTMSG_API_BASE`), in the `Authorization` header; redirects are refused.
+
+If a key leaks: an agent key (`nextmsg_agent_…`) is revoked on its own in the app under Settings → Agents; the main send key is rotated in Settings.

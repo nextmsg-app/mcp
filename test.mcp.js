@@ -4,7 +4,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import http from 'node:http';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, mkdirSync, chmodSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, mkdirSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -43,6 +43,10 @@ const mock = http.createServer((req, res) => {
       return json(200, { send_key: key, key_prefix: key.slice(0, 26), name });
     }
     if (req.url.startsWith('/p/')) return json(410, { error: 'the MCP must not use /p/ any more' });
+    if (req.url.startsWith('/redirect/')) {
+      res.writeHead(307, { Location: `${API}${req.url.slice('/redirect'.length)}` });
+      return res.end();
+    }
     res.writeHead(404).end();
   });
 });
@@ -351,10 +355,14 @@ if (process.platform === 'darwin') {
     liveCodes.add('GGGG-7777');
     sent.length = 0;
     const m = startMcp({ NEXTMSG_KEY: '', XDG_CONFIG_HOME: config });
-    const first = await m.notify({ message: 'x', pair_code: 'GGGG-7777' });
-    const next = await m.notify({ message: 'y' });
-    m.stop();
-    execFileSync('chflags', ['nouchg', dir]);
+    let first, next;
+    try {
+      first = await m.notify({ message: 'x', pair_code: 'GGGG-7777' });
+      next = await m.notify({ message: 'y' });
+    } finally {
+      m.stop();
+      execFileSync('chflags', ['nouchg', dir]);
+    }
     assert.equal(first.isError, false, first.content[0].text);
     assert.match(first.content[0].text, /couldn't be saved/);
     assert.equal(next.isError, false, next.content[0].text);
@@ -384,6 +392,32 @@ await test('NEXTMSG_KEY with a trailing newline is trimmed; a blank one falls ba
   const blank = await runCli(['x'], { extraEnv: { NEXTMSG_KEY: '   ', XDG_CONFIG_HOME: config } });
   assert.equal(blank.code, 0, blank.stderr);
   assert.equal(sent[0].key, readFileSync(keyFile(config), 'utf8').trim());
+});
+
+await test('parallel calls with the same pair_code share one claim and both send', async () => {
+  const config = freshConfig();
+  liveCodes.add('JJJJ-0000');
+  claims.length = 0;
+  sent.length = 0;
+  const m = startMcp({ NEXTMSG_KEY: '', XDG_CONFIG_HOME: config });
+  const [a, b] = await Promise.all([
+    m.notify({ message: 'one', pair_code: 'JJJJ-0000' }),
+    m.notify({ message: 'two', pair_code: 'JJJJ-0000' })
+  ]);
+  m.stop();
+  assert.equal(a.isError, false, a.content[0].text);
+  assert.equal(b.isError, false, b.content[0].text);
+  assert.equal(claims.length, 1);
+  assert.equal(sent.length, 2);
+});
+
+await test('redirects are refused, so the key never follows one', async () => {
+  sent.length = 0;
+  const m = startMcp({ NEXTMSG_API_BASE: `${API}/redirect` });
+  const r = await m.notify({ message: 'x' });
+  m.stop();
+  assert.equal(r.isError, true);
+  assert.equal(sent.length, 0);
 });
 
 // ---------------- CLI ----------------

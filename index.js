@@ -259,6 +259,8 @@ function saveKey(key) {
 
 // A key paired in this MCP session whose file couldn't be written (read-only disk, container)
 let sessionKey = null;
+// The pairing in flight, so parallel tool calls with the same code share one claim
+let pendingPair = null;
 
 /** NEXTMSG_KEY without the whitespace or newline secret stores and files often add */
 function envKey() {
@@ -291,6 +293,16 @@ function rejectedKeyText(source, mode) {
   return `${where} was rejected: it was rotated or revoked, or its inbox was deleted. Update it with the key from the app.`;
 }
 
+/** Docker and similar: the saved key lives only as long as the container's filesystem */
+function inContainer() {
+  try {
+    readFileSync('/.dockerenv');
+    return true;
+  } catch {
+    return Boolean(process.env.container);
+  }
+}
+
 function osName() {
   return { darwin: 'macOS', win32: 'Windows', linux: 'Linux' }[process.platform] ?? process.platform;
 }
@@ -308,7 +320,8 @@ const CLIENT_NAMES = {
   antigravity: 'Antigravity',
   zed: 'Zed',
   cline: 'Cline',
-  goose: 'Goose'
+  goose: 'Goose',
+  'gemini-cli': 'Gemini CLI'
 };
 
 /** "Claude Code on macOS". Never the hostname: it often holds the person's name. */
@@ -327,7 +340,8 @@ function agentName(clientName) {
 /** fetch with the timeout and readable network errors */
 async function request(url, init) {
   try {
-    return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    // The API never redirects these calls; following one would send the key somewhere else
+    return await fetch(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   } catch (err) {
     if (err && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
       throw new Error(`NextMsg did not respond within ${REQUEST_TIMEOUT_MS / 1000} seconds.`);
@@ -490,7 +504,12 @@ async function notifyHuman(toolArgs, clientName) {
   let saveError = null;
 
   const pair = async () => {
-    const claim = await claimCode({ code: pairCode, name: agentName(clientName) });
+    if (!pendingPair) {
+      pendingPair = claimCode({ code: pairCode, name: agentName(clientName) }).finally(() => {
+        pendingPair = null;
+      });
+    }
+    const claim = await pendingPair;
     connectedAs = claim.name;
     resolved = { key: claim.send_key, source: 'file' };
     try {
@@ -549,7 +568,9 @@ async function notifyHuman(toolArgs, clientName) {
   if (connectedAs) {
     const kept = saveError
       ? `The key couldn't be saved (${saveError}), so it works only until this MCP server stops.`
-      : 'The key is saved on this computer, so later notifications need no code.';
+      : inContainer()
+        ? `The key is saved in ${keyFilePath()} inside this container: it's lost when the container is removed unless that folder is a mounted volume (or set NEXTMSG_KEY).`
+        : 'The key is saved on this computer, so later notifications need no code.';
     return { text: `✓ Connected to NextMsg as "${connectedAs}" and sent the notification ${sent}. ${kept}`, isError: false };
   }
   return { text: `✓ Notification sent ${sent}`, isError: false };
