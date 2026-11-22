@@ -8,19 +8,19 @@
     "url": "https://github.com/nextmsg-app/mcp",
     "source": "github"
   },
-  "version": "1.1.2",
+  "version": "1.1.3",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@nextmsg/mcp",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
           "name": "NEXTMSG_KEY",
-          "description": "Optional. Your NextMsg send key (nextmsg_live_...) from the app, Settings > Send key. Without it, the agent asks for a code from Settings > Agents > Connect agent the first time.",
+          "description": "Optional. Your NextMsg send key (nextmsg_live_...) from the app, Settings > Send keys. Without it, the agent asks for a code from Settings > Send keys > Connect with a code the first time.",
           "isRequired": false,
           "isSecret": true,
           "format": "string"

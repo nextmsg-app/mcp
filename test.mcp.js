@@ -38,7 +38,7 @@ const mock = http.createServer((req, res) => {
       if (!liveCodes.delete(code)) {
         return json(400, { error: 'The code is wrong, already used or expired.', code: 'invalid_code' });
       }
-      const key = `nextmsg_agent_${String(++keyCounter).padStart(48, '0')}`;
+      const key = `nextmsg_live_${String(++keyCounter).padStart(48, '0')}`;
       validKeys.add(key);
       return json(200, { send_key: key, key_prefix: key.slice(0, 26), name });
     }
@@ -247,7 +247,7 @@ await test('not connected and no pair_code: asks for a code at once, no request 
   m.stop();
   assert.equal(r.isError, true);
   assert.match(r.content[0].text, /Not connected to NextMsg yet/);
-  assert.match(r.content[0].text, /Settings → Agents → Connect agent/);
+  assert.match(r.content[0].text, /Settings → Send keys → Connect with a code/);
   assert.equal(sent.length + claims.length, 0);
 });
 
@@ -263,7 +263,7 @@ await test('pair_code: claims with "Claude Code on <OS>", saves the key (600), s
   assert.match(r.content[0].text, /Connected to NextMsg as "Claude Code on /);
   assert.deepEqual(claims[0], { code: 'K73M-QX9P', name: `Claude Code on ${OS}` });
   const saved = readFileSync(keyFile(config), 'utf8').trim();
-  assert.match(saved, /^nextmsg_agent_/);
+  assert.match(saved, /^nextmsg_live_/);
   assert.equal(sent[0].key, saved);
   assert.ok(!r.content[0].text.includes(saved), 'the key must not reach the model');
   if (process.platform !== 'win32') {
@@ -350,7 +350,7 @@ if (process.platform === 'darwin') {
     const config = freshConfig();
     const dir = path.dirname(keyFile(config));
     mkdirSync(dir, { recursive: true });
-    writeFileSync(keyFile(config), 'nextmsg_agent_revokedrevoked\n');
+    writeFileSync(keyFile(config), 'nextmsg_live_revokedrevoked\n');
     execFileSync('chflags', ['uchg', dir]); // the folder can't take the new file
     liveCodes.add('GGGG-7777');
     sent.length = 0;
@@ -368,7 +368,7 @@ if (process.platform === 'darwin') {
     assert.equal(next.isError, false, next.content[0].text);
     assert.equal(sent.length, 2);
     assert.equal(sent[1].key, sent[0].key);
-    assert.deepEqual(readFileSync(keyFile(config), 'utf8'), 'nextmsg_agent_revokedrevoked\n');
+    assert.deepEqual(readFileSync(keyFile(config), 'utf8'), 'nextmsg_live_revokedrevoked\n');
     assert.equal(readdirTmp(dir), 0, 'no temporary key file left behind');
   });
 }

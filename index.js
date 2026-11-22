@@ -29,7 +29,7 @@ const MAX_MESSAGE_CHARS = 640;
 const REQUEST_TIMEOUT_MS = Number(process.env.NEXTMSG_TIMEOUT_MS) || 15000; // env override is for tests
 // Protocol versions this server speaks; the client's version is echoed back when it's one of these
 const SUPPORTED_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
-const CONNECT_STEPS = 'NextMsg → Settings → Agents → Connect agent';
+const CONNECT_STEPS = 'NextMsg → Settings → Send keys → Connect with a code';
 
 // ==========================================
 // CLI
@@ -75,7 +75,7 @@ USAGE (MCP SERVER):
   }
 
   The first time, the agent asks you for a code from the app. Or set
-  "env": { "NEXTMSG_KEY": "nextmsg_live_..." } to use the send key from Settings.
+  "env": { "NEXTMSG_KEY": "nextmsg_live_..." } to use a send key from Settings → Send keys.
 `);
 }
 
@@ -141,7 +141,7 @@ async function runCli(cliArgs) {
   if (!resolved) {
     console.error(`Error: Not connected to NextMsg. In the app open ${CONNECT_STEPS}, then run:`);
     console.error('  npx @nextmsg/mcp --pair <code>');
-    console.error('Or set the NEXTMSG_KEY environment variable to the send key from Settings.');
+    console.error('Or set the NEXTMSG_KEY environment variable to a send key from Settings → Send keys.');
     process.exit(1);
   }
 
@@ -171,7 +171,7 @@ async function cliPair(code) {
   console.log(`✓ Connected as "${claim.name}". Check your phone.`);
   console.log(`  The key is saved in ${file} (only you can read it).`);
   if (hadKey) {
-    console.log('  It replaces the key saved before. If that agent is no longer used, revoke it in NextMsg → Settings → Agents.');
+    console.log('  It replaces the key saved before. If that key is no longer used, revoke it in NextMsg → Settings → Send keys.');
   }
   if (envKey()) {
     console.log('  Note: NEXTMSG_KEY is set in this environment and is used instead of the saved key.');
@@ -203,7 +203,7 @@ function cliDisconnect() {
     throw err;
   }
   console.log(`✓ Deleted the saved key in ${file}.`);
-  console.log('  It keeps working until you revoke it in NextMsg → Settings → Agents.');
+  console.log('  It keeps working until you revoke it in NextMsg → Settings → Send keys.');
 }
 
 // ==========================================
@@ -277,7 +277,7 @@ function resolveKey() {
   return saved ? { key: saved, source: 'file' } : null;
 }
 
-/** "nextmsg_agent_3f9a…" or "nextmsg_live_…" without the secret part */
+/** "nextmsg_live_3f9a…" without the secret part */
 function maskKey(key) {
   const match = /^(nextmsg_[a-z]+_)(.{0,4})/.exec(key);
   return match ? `${match[1]}${match[2]}…` : 'unrecognized format';
@@ -365,8 +365,8 @@ function apiUrl(apiBase, pathname) {
 }
 
 /**
- * Validates and sends one message with the key in the Authorization header (agent keys only
- * work there). Throws an Error with a readable message, and `status` for HTTP errors.
+ * Validates and sends one message with the key in the Authorization header (keeps it out of
+ * URLs and logs). Throws an Error with a readable message, and `status` for HTTP errors.
  */
 async function sendMessage({ message, channel = 'general', sendKey, apiBase = DEFAULT_API_BASE }) {
   if (!sendKey) {
@@ -491,7 +491,7 @@ function toolResult(id, text, isError) {
 
 const NOT_CONNECTED_TEXT =
   `Not connected to NextMsg yet. Ask the user to open ${CONNECT_STEPS} and tell you the code, then call notify_human again with pair_code. ` +
-  "If they can't find Connect agent, they need the latest NextMsg app, or they can set NEXTMSG_KEY to the send key from Settings.";
+  "In NextMsg 1.4 it is Settings → Agents → Connect agent. Or they can set NEXTMSG_KEY to a send key from the app.";
 
 /** notify_human: returns { text, isError } */
 async function notifyHuman(toolArgs, clientName) {
