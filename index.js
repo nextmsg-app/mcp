@@ -9,7 +9,7 @@
  *
  * Modes:
  *   nextmsg "message" [-c channel]   CLI: send one message and exit (works in scripts, CI and hooks)
- *   nextmsg --pair K73M-QX9P         CLI: connect this computer with a code from the app
+ *   nextmsg --pair K73M-QX9P         CLI: pair this computer with a pairing code from the app
  *   nextmsg --status | --disconnect  CLI: show or remove the saved key
  *   nextmsg  /  nextmsg --mcp        MCP server over stdio (what MCP clients launch)
  *
@@ -29,7 +29,7 @@ const MAX_MESSAGE_CHARS = 640;
 const REQUEST_TIMEOUT_MS = Number(process.env.NEXTMSG_TIMEOUT_MS) || 15000; // env override is for tests
 // Protocol versions this server speaks; the client's version is echoed back when it's one of these
 const SUPPORTED_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
-const CONNECT_STEPS = 'NextMsg → Settings → Send keys → Connect with a code';
+const CONNECT_STEPS = 'NextMsg → Settings → Send keys → Add send key → Use a pairing code';
 
 // ==========================================
 // CLI
@@ -50,7 +50,7 @@ USAGE (CLI):
 
 OPTIONS:
   -c, --channel <name>   Channel tag, 1-32 chars [a-z0-9_-] (default: general)
-  --pair <code>          Connect with a code from the app and save this computer's own key
+  --pair <code>          Pair with a pairing code from the app and save this computer's own key
   --status               Show which key is used
   --disconnect           Delete the saved key (revoke it in the app too)
   -k, --key <key>        Send key. Prefer --pair or the NEXTMSG_KEY environment variable:
@@ -74,7 +74,7 @@ USAGE (MCP SERVER):
     }
   }
 
-  The first time, the agent asks you for a code from the app. Or set
+  The first time, the agent asks you for a pairing code from the app. Or set
   "env": { "NEXTMSG_KEY": "nextmsg_live_..." } to use a send key from Settings → Send keys.
 `);
 }
@@ -155,7 +155,7 @@ async function runCli(cliArgs) {
 }
 
 async function cliPair(code) {
-  if (!code.trim()) throw new Error(`--pair needs the code from ${CONNECT_STEPS}, e.g. --pair K73M-QX9P`);
+  if (!code.trim()) throw new Error(`--pair needs the pairing code from ${CONNECT_STEPS}, e.g. --pair K73M-QX9P`);
   const hadKey = readSavedKey() !== null;
   const claim = await claimCode({ code, name: `CLI on ${osName()}` });
   let file;
@@ -286,11 +286,11 @@ function maskKey(key) {
 function rejectedKeyText(source, mode) {
   if (source === 'file') {
     return mode === 'cli'
-      ? `This computer's key was revoked in NextMsg, or its inbox was deleted. Get a new code from ${CONNECT_STEPS} and run: npx @nextmsg/mcp --pair <code>`
-      : `This agent's key was revoked in NextMsg, or its inbox was deleted. Ask the user for a new code from ${CONNECT_STEPS}, then call notify_human again with pair_code.`;
+      ? `This computer's key was revoked in NextMsg, or its inbox was deleted. Get a new pairing code from ${CONNECT_STEPS} and run: npx @nextmsg/mcp --pair <code>`
+      : `This agent's key was revoked in NextMsg, or its inbox was deleted. Ask the user for a new pairing code from ${CONNECT_STEPS}, then call notify_human again with pair_code.`;
   }
   const where = source === 'option' ? 'The key given with --key' : 'NEXTMSG_KEY';
-  return `${where} was rejected: it was rotated or revoked, or its inbox was deleted. Update it with the key from the app.`;
+  return `${where} was rejected: it was revoked, or its inbox was deleted. Update it with a send key from the app.`;
 }
 
 /** Docker and similar: the saved key lives only as long as the container's filesystem */
@@ -402,7 +402,7 @@ async function sendMessage({ message, channel = 'general', sendKey, apiBase = DE
     const fail = (text) => Object.assign(new Error(text), { status: response.status });
     switch (response.status) {
       case 401:
-        throw fail('The key is invalid, was rotated or revoked, or its inbox was deleted.');
+        throw fail('The key is invalid, was revoked, or its inbox was deleted.');
       case 402:
         throw fail('The free plan limit (100 messages a month) is reached. The recipient can upgrade in the app.');
       case 413:
@@ -418,7 +418,7 @@ async function sendMessage({ message, channel = 'general', sendKey, apiBase = DE
   return { ...result, channel: cleanChannel };
 }
 
-/** Exchanges a pickup code for this computer's own key, once. Returns { send_key, name }. */
+/** Exchanges a pairing code for this computer's own key, once. Returns { send_key, name }. */
 async function claimCode({ code, name, apiBase = DEFAULT_API_BASE }) {
   const response = await request(apiUrl(apiBase, '/v1/agent/claim'), {
     method: 'POST',
@@ -426,8 +426,8 @@ async function claimCode({ code, name, apiBase = DEFAULT_API_BASE }) {
     body: JSON.stringify({ code: String(code).trim(), name })
   });
   if (!response.ok) {
-    if (response.status === 429) throw new Error('Too many attempts. Wait a minute, then try again with a new code.');
-    if (response.status === 404) throw new Error('This NextMsg server does not support connecting with a code yet.');
+    if (response.status === 429) throw new Error('Too many attempts. Wait a minute, then try again with a new pairing code.');
+    if (response.status === 404) throw new Error('This NextMsg server does not support pairing codes yet.');
     throw new Error(await errorDetail(response));
   }
   const body = await response.json();
@@ -451,7 +451,7 @@ const TOOLS = [
       'Never include secrets, tokens or personal data: the text appears on the lock screen. ' +
       'Keep it short and specific: what happened, where, and what (if anything) the user should do. ' +
       'If sending fails, tell the user in the conversation instead of retrying. ' +
-      `If the result says NextMsg isn't connected, ask the user for the code from ${CONNECT_STEPS} and call again with pair_code.`,
+      `If the result says NextMsg isn't connected, ask the user for a pairing code from ${CONNECT_STEPS} and call again with pair_code.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -472,7 +472,7 @@ const TOOLS = [
           type: 'string',
           maxLength: 20,
           description:
-            `Only when NextMsg isn't connected yet: the 8-character code the user got from ${CONNECT_STEPS} (like K73M-QX9P). Connects this computer once; leave it out afterwards. Never put a send key here.`
+            `Only when NextMsg isn't connected yet: the 8-character pairing code the user got from ${CONNECT_STEPS} (like K73M-QX9P). Pairs this computer once; leave it out afterwards. Never put a send key here.`
         }
       },
       required: ['message'],
@@ -490,8 +490,8 @@ function toolResult(id, text, isError) {
 }
 
 const NOT_CONNECTED_TEXT =
-  `Not connected to NextMsg yet. Ask the user to open ${CONNECT_STEPS} and tell you the code, then call notify_human again with pair_code. ` +
-  "In NextMsg 1.4 it is Settings → Agents → Connect agent. Or they can set NEXTMSG_KEY to a send key from the app.";
+  `Not connected to NextMsg yet. Ask the user to open ${CONNECT_STEPS} and tell you the pairing code, then call notify_human again with pair_code. ` +
+  '(In older app versions: Settings → Send keys → Connect with a code.) Or they can set NEXTMSG_KEY to a send key from the app.';
 
 /** notify_human: returns { text, isError } */
 async function notifyHuman(toolArgs, clientName) {
@@ -534,7 +534,7 @@ async function notifyHuman(toolArgs, clientName) {
       await pair();
     } catch (err) {
       return {
-        text: `Couldn't connect to NextMsg: ${err.message} Ask the user for a new code from ${CONNECT_STEPS}. Nothing was sent.`,
+        text: `Couldn't connect to NextMsg: ${err.message} Ask the user for a new pairing code from ${CONNECT_STEPS}. Nothing was sent.`,
         isError: true
       };
     }
@@ -559,7 +559,7 @@ async function notifyHuman(toolArgs, clientName) {
       await pair();
     } catch (pairErr) {
       return {
-        text: `This agent's key was revoked in NextMsg, and connecting again failed: ${pairErr.message} Ask the user for a new code from ${CONNECT_STEPS}. Nothing was sent.`,
+        text: `This agent's key was revoked in NextMsg, and connecting again failed: ${pairErr.message} Ask the user for a new pairing code from ${CONNECT_STEPS}. Nothing was sent.`,
         isError: true
       };
     }

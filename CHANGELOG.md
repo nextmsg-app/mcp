@@ -2,7 +2,7 @@
 
 ## 1.1.3
 
-- Wording for NextMsg 1.5: keys live under Settings → Send keys, and a code comes from Connect with a code there (the not-connected answer still mentions the 1.4 path)
+- Wording for NextMsg 1.6: pairing codes come from **Settings → Send keys → Add send key → Use a pairing code** (with a fallback hint for older app versions), and every send key is equal and individually revocable
 - `server.json`, README and `SECURITY.md` updated the same way; every key is `nextmsg_live_`
 
 ## 1.1.2

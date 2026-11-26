@@ -247,7 +247,7 @@ await test('not connected and no pair_code: asks for a code at once, no request 
   m.stop();
   assert.equal(r.isError, true);
   assert.match(r.content[0].text, /Not connected to NextMsg yet/);
-  assert.match(r.content[0].text, /Settings → Send keys → Connect with a code/);
+  assert.match(r.content[0].text, /Settings → Send keys → Add send key → Use a pairing code/);
   assert.equal(sent.length + claims.length, 0);
 });
 
