@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3
+
+- Wording for NextMsg 1.6: pairing codes come from **Settings → Send keys → Add send key → Use a pairing code** (with a fallback hint for older app versions), and every send key is equal and individually revocable
+- `server.json`, README and `SECURITY.md` updated the same way; every key is `nextmsg_live_`
+
 ## 1.1.2
 
 - `NEXTMSG_KEY` is optional in the MCP Registry listing and `mcp.json`: without it, the agent asks for a code from Settings → Agents → Connect agent
